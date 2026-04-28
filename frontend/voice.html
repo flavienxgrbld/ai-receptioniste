@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vocal — Réceptionniste IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f6f2;
+      --surface: #ffffff;
+      --border: #e4e2db;
+      --text: #1a1a18;
+      --muted: #7a7870;
+      --accent: #1a4f8a;
+      --accent-light: #e8f0fa;
+      --green: #1a6b4a;
+      --green-light: #e6f4ee;
+      --red: #9b2c2c;
+      --red-light: #fdf0f0;
+      --radius: 14px;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 6px 10px;
+      border-radius: 8px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .back-btn:hover { background: var(--bg); color: var(--text); }
+
+    .header-sep { width: 1px; height: 20px; background: var(--border); }
+    .header-title { font-size: 0.9rem; font-weight: 500; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5rem;
+      padding: 2rem;
+    }
+
+    /* Orb */
+    .orb-wrap { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+
+    .orb {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .orb:hover {
+      transform: scale(1.04);
+      box-shadow: 0 8px 32px rgba(26,79,138,0.12);
+      border-color: var(--accent);
+    }
+
+    .orb.recording {
+      border-color: var(--red);
+      animation: recordRing 1.2s ease-in-out infinite;
+    }
+
+    .orb.recording .orb-ring {
+      opacity: 1;
+      animation: expandRing 1.2s ease-out infinite;
+    }
+
+    @keyframes recordRing {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(155,44,44,0.2); }
+      50% { box-shadow: 0 0 0 16px rgba(155,44,44,0); }
+    }
+
+    .orb svg { width: 32px; height: 32px; transition: color 0.2s; }
+    .orb:not(.recording) svg { color: var(--accent); }
+    .orb.recording svg { color: var(--red); }
+
+    .orb-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+
+    .orb.recording + .orb-label { color: var(--red); }
+
+    /* Wave visualizer */
+    .wave {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 32px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .wave.active { opacity: 1; }
+
+    .wave-bar {
+      width: 3px;
+      border-radius: 99px;
+      background: var(--accent);
+      transition: height 0.1s;
+    }
+
+    /* Status */
+    #status {
+      font-size: 0.85rem;
+      color: var(--muted);
+      min-height: 1.2em;
+      text-align: center;
+      transition: color 0.2s;
+    }
+
+    /* Transcripts */
+    .transcripts {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .transcript-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      display: none;
+      animation: fadeUp 0.25s ease;
+    }
+
+    .transcript-card.visible { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .transcript-label {
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .transcript-label.user { color: var(--accent); }
+    .transcript-label.ai   { color: var(--green); }
+
+    .transcript-text {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    audio { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-btn" href="index.html">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+    Accueil
+  </a>
+  <div class="header-sep"></div>
+  <div class="header-title">Interface vocale</div>
+</header>
+
+<main>
+  <div class="orb-wrap">
+    <div class="orb" id="orb" onclick="toggleRecord()" title="Cliquez pour parler">
+      <svg id="orb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+        <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </div>
+    <div class="orb-label" id="orb-label">Appuyez pour parler</div>
+  </div>
+
+  <div class="wave" id="wave">
+    <div class="wave-bar" style="height:8px" id="b0"></div>
+    <div class="wave-bar" style="height:14px" id="b1"></div>
+    <div class="wave-bar" style="height:20px" id="b2"></div>
+    <div class="wave-bar" style="height:10px" id="b3"></div>
+    <div class="wave-bar" style="height:24px" id="b4"></div>
+    <div class="wave-bar" style="height:16px" id="b5"></div>
+    <div class="wave-bar" style="height:20px" id="b6"></div>
+    <div class="wave-bar" style="height:8px" id="b7"></div>
+    <div class="wave-bar" style="height:18px" id="b8"></div>
+    <div class="wave-bar" style="height:12px" id="b9"></div>
+  </div>
+
+  <div id="status">Cliquez sur le microphone pour commencer</div>
+
+  <div class="transcripts">
+    <div class="transcript-card" id="user-card">
+      <div class="transcript-label user">Vous avez dit</div>
+      <div class="transcript-text" id="user-text"></div>
+    </div>
+    <div class="transcript-card" id="ai-card">
+      <div class="transcript-label ai">Réceptionniste</div>
+      <div class="transcript-text" id="ai-text"></div>
+    </div>
+  </div>
+
+  <audio id="audio-player" autoplay></audio>
+</main>
+
+<script>
+  let mediaRecorder, chunks = [], recording = false, waveInterval;
+
+  const orb = document.getElementById('orb');
+  const orbLabel = document.getElementById('orb-label');
+  const wave = document.getElementById('wave');
+  const status = document.getElementById('status');
+
+  function animateWave(active) {
+    clearInterval(waveInterval);
+    if (!active) { wave.classList.remove('active'); return; }
+    wave.classList.add('active');
+    waveInterval = setInterval(() => {
+      for (let i = 0; i < 10; i++) {
+        const h = active ? (6 + Math.random() * 22) : 8;
+        document.getElementById('b' + i).style.height = Math.round(h) + 'px';
+      }
+    }, 80);
+  }
+
+  async function toggleRecord() {
+    if (!recording) await startRecord();
+    else stopRecord();
+  }
+
+  async function startRecord() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      chunks = [];
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.start();
+      recording = true;
+      orb.classList.add('recording');
+      orbLabel.textContent = 'Enregistrement… cliquez pour arrêter';
+      status.textContent = 'En cours d\'écoute…';
+      animateWave(true);
+    } catch {
+      status.textContent = 'Accès au microphone refusé.';
+    }
+  }
+
+  function stopRecord() {
+    mediaRecorder.stop();
+    recording = false;
+    orb.classList.remove('recording');
+    orbLabel.textContent = 'Traitement en cours…';
+    status.textContent = 'Transcription et analyse…';
+    animateWave(false);
+
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      const fd = new FormData();
+      fd.append('audio', blob, 'recording.webm');
+
+      try {
+        const res = await fetch('/api/voice', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        document.getElementById('user-text').textContent = data.transcript || '(non reconnu)';
+        document.getElementById('ai-text').textContent = data.response || '';
+        document.getElementById('user-card').classList.add('visible');
+        document.getElementById('ai-card').classList.add('visible');
+
+        if (data.audio_url) {
+          document.getElementById('audio-player').src = data.audio_url;
+        }
+
+        orbLabel.textContent = 'Appuyez pour parler';
+        status.textContent = 'Réponse reçue — cliquez pour reposer une question';
+      } catch {
+        orbLabel.textContent = 'Appuyez pour parler';
+        status.textContent = 'Erreur de connexion. Réessayez.';
+      }
+    };
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Réceptionniste IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f6f2;
+      --surface: #ffffff;
+      --border: #e4e2db;
+      --text: #1a1a18;
+      --muted: #7a7870;
+      --accent: #1a4f8a;
+      --accent-light: #e8f0fa;
+      --green: #1a6b4a;
+      --green-light: #e6f4ee;
+      --radius: 14px;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+      padding: 2rem;
+    }
+
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2.5rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .logo {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.2rem;
+      color: var(--text);
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--green-light);
+      color: var(--green);
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 99px;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3rem;
+      padding-top: 56px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .headline {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .headline h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      line-height: 1.2;
+      color: var(--text);
+    }
+
+    .headline h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .headline p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      width: 100%;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 1.75rem;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(26,79,138,0.08);
+    }
+
+    .card-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-icon.chat { background: var(--accent-light); }
+    .card-icon.voice { background: var(--green-light); }
+
+    .card-icon svg { width: 20px; height: 20px; }
+
+    .card-body {}
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .card-arrow {
+      margin-top: auto;
+      font-size: 1.2rem;
+      color: var(--border);
+      transition: color 0.2s, transform 0.2s;
+    }
+
+    .card:hover .card-arrow {
+      color: var(--accent);
+      transform: translateX(4px);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    footer {
+      font-size: 0.75rem;
+      color: var(--muted);
+      animation: fadeUp 0.5s 0.2s ease both;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Réceptionniste IA</div>
+  <div class="status-pill">
+    <div class="status-dot"></div>
+    Disponible
+  </div>
+</header>
+
+<main>
+  <div class="headline">
+    <h1>Bonjour,<br>comment puis-je<br><em>vous aider ?</em></h1>
+    <p>Choisissez votre mode de communication<br>avec votre réceptionniste virtuel.</p>
+  </div>
+
+  <div class="cards">
+    <a class="card" href="chat.html">
+      <div class="card-icon chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1a4f8a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Chat</div>
+        <div class="card-desc">Échangez par écrit avec le réceptionniste en temps réel.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="card" href="voice.html">
+      <div class="card-icon voice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1a6b4a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+          <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Vocal</div>
+        <div class="card-desc">Parlez directement à voix haute et recevez une réponse audio.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+  </div>
+
+  <footer>Propulsé par Ollama · Mistral · Whisper</footer>
+</main>
+
+</body>
+</html>
