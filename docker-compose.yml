@@ -39,6 +39,13 @@ services:
       - chat-service
       - voice-service
 
+  frontend:
+    build: ./frontend-service
+    ports:
+      - "8080:80"
+    depends_on:
+      - gateway
+
   db:
     image: postgres:15
     environment:
