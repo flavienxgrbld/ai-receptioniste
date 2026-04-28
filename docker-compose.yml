@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "5000:5000"
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  chat-service:
+    build: ./chat-service
+    ports:
+      - "5001:5001"
+    depends_on:
+      - ai-service
+
+  voice-service:
+    build: ./voice-service
+    ports:
+      - "5002:5002"
+    depends_on:
+      - ai-service
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - chat-service
+      - voice-service
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: receptionist
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  ollama_data:
+  db_data:
