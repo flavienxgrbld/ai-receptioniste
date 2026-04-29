@@ -14,7 +14,7 @@ async def ask_ai(data: dict):
     prompt = f"{SYSTEM_PROMPT}\nUtilisateur: {user_message}\nIA:"
 
     response = requests.post(OLLAMA_URL, json={
-        "model": "mistral",
+        "model": "phi3-mini",
         "prompt": prompt,
         "stream": False
     })
