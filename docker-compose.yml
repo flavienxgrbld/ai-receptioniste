@@ -10,20 +10,13 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 20s
 
   ollama-init:
     image: curlimages/curl:latest
     container_name: ollama-init
     depends_on:
-      ollama:
-        condition: service_healthy
-    entrypoint: ["sh", "-c", "curl -X POST http://ollama:11434/api/pull -H 'Content-Type: application/json' -d '{\"name\":\"phi3:mini\"}' --max-time 300"]
+      - ollama
+    entrypoint: ["sh", "-c", "sleep 10 && curl -X POST http://ollama:11434/api/pull -H 'Content-Type: application/json' -d '{\"name\":\"phi3:mini\"}' --max-time 300"]
     restart: no
 
   ai-service:
@@ -36,14 +29,7 @@ services:
       - OLLAMA_HOST=${OLLAMA_HOST}
       - MODEL_NAME=${MODEL_NAME}
     depends_on:
-      ollama:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - ollama
 
   chat-service:
     image: ghcr.io/flavienxgrbld/ai-receptioniste-chat-service:latest
@@ -55,16 +41,8 @@ services:
       - AI_SERVICE_URL=http://ai-service:5000
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
-      ai-service:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - ai-service
+      - db
 
   voice-service:
     image: ghcr.io/flavienxgrbld/ai-receptioniste-voice-service:latest
@@ -75,14 +53,7 @@ services:
     environment:
       - AI_SERVICE_URL=http://ai-service:5000
     depends_on:
-      ai-service:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - ai-service
 
   gateway:
     image: ghcr.io/flavienxgrbld/ai-receptioniste-gateway:latest
@@ -94,16 +65,8 @@ services:
       - CHAT_SERVICE_URL=http://chat-service:5001
       - VOICE_SERVICE_URL=http://voice-service:5002
     depends_on:
-      chat-service:
-        condition: service_healthy
-      voice-service:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - chat-service
+      - voice-service
 
   frontend:
     image: ghcr.io/flavienxgrbld/ai-receptioniste-frontend:latest
@@ -112,8 +75,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      gateway:
-        condition: service_healthy
+      - gateway
 
   db:
     image: postgres:15
@@ -127,12 +89,6 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
 volumes:
   ollama_data:
