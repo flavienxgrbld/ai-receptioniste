@@ -1,0 +1,54 @@
+name: Build & Push to GitHub Container Registry
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push ai-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai-service
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/ai-receptioniste-ai-service:latest
+
+      - name: Build & Push chat-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./chat-service
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/ai-receptioniste-chat-service:latest
+
+      - name: Build & Push voice-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./voice-service
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/ai-receptioniste-voice-service:latest
+
+      - name: Build & Push gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./gateway
+          push: true
+          tags:
