@@ -12,9 +12,10 @@ services:
       - ollama_data:/root/.ollama
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
 
   ollama-init:
     image: curlimages/curl:latest
@@ -22,14 +23,11 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
-    entrypoint: >
-      sh -c "curl -X POST http://ollama:11434/api/pull
-      -H 'Content-Type: application/json'
-      -d '{\"name\":\"phi3:mini\"}'"
+    entrypoint: ["sh", "-c", "curl -X POST http://ollama:11434/api/pull -H 'Content-Type: application/json' -d '{\"name\":\"phi3:mini\"}' --max-time 300"]
     restart: no
 
   ai-service:
-    build: ./ai-service
+    image: ghcr.io/flavienxgrbld/ai-receptioniste-ai-service:latest
     container_name: ai-service
     restart: unless-stopped
     ports:
@@ -45,9 +43,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   chat-service:
-    build: ./chat-service
+    image: ghcr.io/flavienxgrbld/ai-receptioniste-chat-service:latest
     container_name: chat-service
     restart: unless-stopped
     ports:
@@ -65,9 +64,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   voice-service:
-    build: ./voice-service
+    image: ghcr.io/flavienxgrbld/ai-receptioniste-voice-service:latest
     container_name: voice-service
     restart: unless-stopped
     ports:
@@ -82,9 +82,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   gateway:
-    build: ./gateway
+    image: ghcr.io/flavienxgrbld/ai-receptioniste-gateway:latest
     container_name: gateway
     restart: unless-stopped
     ports:
@@ -102,15 +103,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   frontend:
-    build: ./frontend-service
+    image: ghcr.io/flavienxgrbld/ai-receptioniste-frontend:latest
     container_name: frontend
     restart: unless-stopped
     ports:
       - "8080:80"
-    environment:
-      - GATEWAY_URL=http://gateway:3000
     depends_on:
       gateway:
         condition: service_healthy
@@ -128,10 +128,11 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d receptionist"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
 volumes:
   ollama_data:
