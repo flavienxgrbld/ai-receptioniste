@@ -2,52 +2,131 @@ version: "3.9"
 
 services:
 
-  ai-service:
-    build: ./ai-service
-    ports:
-      - "5000:5000"
-    depends_on:
-      - ollama
-
+  # ─── OLLAMA ───────────────────────────────────────────────
   ollama:
     image: ollama/ollama
     container_name: ollama
+    restart: unless-stopped
     ports:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ─── OLLAMA INIT (pull phi3:mini au démarrage) ────────────
+  ollama-init:
+    image: curlimages/curl:latest
+    container_name: ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "curl -X POST http://ollama:11434/api/pull
+      -H 'Content-Type: application/json'
+      -d '{\"name\":\"phi3:mini\"}'"
+    restart: no
+
+  # ─── AI SERVICE ───────────────────────────────────────────
+  ai-service:
+    build: ./ai-service
+    container_name: ai-service
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - MODEL_NAME=phi3:mini
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── CHAT SERVICE ─────────────────────────────────────────
   chat-service:
     build: ./chat-service
+    container_name: chat-service
+    restart: unless-stopped
     ports:
       - "5001:5001"
+    environment:
+      - AI_SERVICE_URL=http://ai-service:5000
+      - DATABASE_URL=postgresql://admin:admin@db:5432/receptionist
     depends_on:
-      - ai-service
+      ai-service:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ─── VOICE SERVICE ────────────────────────────────────────
   voice-service:
     build: ./voice-service
+    container_name: voice-service
+    restart: unless-stopped
     ports:
       - "5002:5002"
+    environment:
+      - AI_SERVICE_URL=http://ai-service:5000
     depends_on:
-      - ai-service
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ─── GATEWAY ──────────────────────────────────────────────
   gateway:
     build: ./gateway
+    container_name: gateway
+    restart: unless-stopped
     ports:
       - "3000:3000"
+    environment:
+      - CHAT_SERVICE_URL=http://chat-service:5001
+      - VOICE_SERVICE_URL=http://voice-service:5002
     depends_on:
-      - chat-service
-      - voice-service
+      chat-service:
+        condition: service_healthy
+      voice-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ─── FRONTEND ─────────────────────────────────────────────
   frontend:
     build: ./frontend-service
+    container_name: frontend
+    restart: unless-stopped
     ports:
       - "8080:80"
+    environment:
+      - GATEWAY_URL=http://gateway:3000
     depends_on:
-      - gateway
+      gateway:
+        condition: service_healthy
 
+  # ─── POSTGRESQL ───────────────────────────────────────────
   db:
     image: postgres:15
+    container_name: db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -56,6 +135,11 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d receptionist"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   ollama_data:
