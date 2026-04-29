@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 env:
-  REGISTRY: ghcr.io
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -30,25 +30,32 @@ jobs:
         with:
           context: ./ai-service
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/ai-receptioniste-ai-service:latest
+          tags: ghcr.io/flavienxgrbld/ai-receptioniste-ai-service:latest
 
       - name: Build & Push chat-service
         uses: docker/build-push-action@v5
         with:
           context: ./chat-service
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/ai-receptioniste-chat-service:latest
+          tags: ghcr.io/flavienxgrbld/ai-receptioniste-chat-service:latest
 
       - name: Build & Push voice-service
         uses: docker/build-push-action@v5
         with:
           context: ./voice-service
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/ai-receptioniste-voice-service:latest
+          tags: ghcr.io/flavienxgrbld/ai-receptioniste-voice-service:latest
 
       - name: Build & Push gateway
         uses: docker/build-push-action@v5
         with:
           context: ./gateway
           push: true
-          tags:
+          tags: ghcr.io/flavienxgrbld/ai-receptioniste-gateway:latest
+
+      - name: Build & Push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend-service
+          push: true
+          tags: ghcr.io/flavienxgrbld/ai-receptioniste-frontend:latest
