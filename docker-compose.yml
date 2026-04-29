@@ -2,7 +2,6 @@ version: "3.9"
 
 services:
 
-  # ─── OLLAMA ───────────────────────────────────────────────
   ollama:
     image: ollama/ollama
     container_name: ollama
@@ -17,7 +16,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── OLLAMA INIT (pull phi3:mini au démarrage) ────────────
   ollama-init:
     image: curlimages/curl:latest
     container_name: ollama-init
@@ -30,7 +28,6 @@ services:
       -d '{\"name\":\"phi3:mini\"}'"
     restart: no
 
-  # ─── AI SERVICE ───────────────────────────────────────────
   ai-service:
     build: ./ai-service
     container_name: ai-service
@@ -38,8 +35,8 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - MODEL_NAME=phi3:mini
+      - OLLAMA_HOST=${OLLAMA_HOST}
+      - MODEL_NAME=${MODEL_NAME}
     depends_on:
       ollama:
         condition: service_healthy
@@ -49,7 +46,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── CHAT SERVICE ─────────────────────────────────────────
   chat-service:
     build: ./chat-service
     container_name: chat-service
@@ -58,7 +54,7 @@ services:
       - "5001:5001"
     environment:
       - AI_SERVICE_URL=http://ai-service:5000
-      - DATABASE_URL=postgresql://admin:admin@db:5432/receptionist
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
       ai-service:
         condition: service_healthy
@@ -70,7 +66,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── VOICE SERVICE ────────────────────────────────────────
   voice-service:
     build: ./voice-service
     container_name: voice-service
@@ -88,7 +83,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── GATEWAY ──────────────────────────────────────────────
   gateway:
     build: ./gateway
     container_name: gateway
@@ -109,7 +103,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── FRONTEND ─────────────────────────────────────────────
   frontend:
     build: ./frontend-service
     container_name: frontend
@@ -122,21 +115,20 @@ services:
       gateway:
         condition: service_healthy
 
-  # ─── POSTGRESQL ───────────────────────────────────────────
   db:
     image: postgres:15
     container_name: db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: receptionist
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d receptionist"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
